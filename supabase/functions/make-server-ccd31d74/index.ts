@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Hono } from "npm:hono";
 import { cors } from "npm:hono/cors";
 import { logger } from "npm:hono/logger";

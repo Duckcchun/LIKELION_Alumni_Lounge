@@ -49,7 +49,7 @@ export function Header() {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`transition-colors font-medium hover:scale-105 transform transition-transform ${
+                className={`transition-all font-medium hover:scale-105 ${
                   location.pathname === item.path
                     ? 'text-[#FF6B00]'
                     : 'hover:text-[#FF6B00]'

@@ -1,17 +1,18 @@
-import { Send, Rocket, Award, Code, CheckCircle, AlertCircle } from 'lucide-react';
+import { Send, Rocket, Award, Code, AlertCircle } from 'lucide-react';
 import { useState } from 'react';
 import { submitStory } from '../utils/api';
+import { toast } from 'sonner';
 
 export function Submit() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    cohort: '',
     category: '',
     title: '',
     content: '',
   });
   const [submitting, setSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const categories = [
@@ -38,7 +39,7 @@ export function Submit() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.email || !formData.category || !formData.title || !formData.content) {
+    if (!formData.name || !formData.email || !formData.cohort || !formData.category || !formData.title || !formData.content) {
       setError('모든 필드를 입력해주세요.');
       return;
     }
@@ -48,21 +49,27 @@ export function Submit() {
       setError(null);
       
       await submitStory(formData);
-      
-      setSuccess(true);
+
+      toast.success('띠링! 제보가 완료되었습니다.', {
+        description: `${formData.cohort} ${formData.name}님의 제보가 정상 접수되었습니다.`,
+        duration: 4000,
+      });
+
       setFormData({
         name: '',
         email: '',
+        cohort: '',
         category: '',
         title: '',
         content: '',
       });
-
-      // Reset success message after 5 seconds
-      setTimeout(() => setSuccess(false), 5000);
     } catch (err) {
       console.error('Failed to submit story:', err);
       setError('제보 제출에 실패했습니다. 다시 시도해주세요.');
+      toast.error('제보 제출에 실패했습니다.', {
+        description: '잠시 후 다시 시도해주세요.',
+        duration: 3000,
+      });
     } finally {
       setSubmitting(false);
     }
@@ -80,7 +87,7 @@ export function Submit() {
       <section className="bg-gradient-to-br from-[#1A1A1A] to-[#2A2A2A] text-white py-12 sm:py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="inline-block px-4 py-2 bg-[#FF6B00] rounded-full text-sm mb-4">
-            📝 나의 이야기 공유하기
+            나의 이야기 공유하기
           </div>
           <h1 className="text-3xl sm:text-4xl md:text-5xl mb-4">
             알럼나이 <span className="text-[#FF6B00]">제보하기</span>
@@ -127,19 +134,6 @@ export function Submit() {
             </p>
           </div>
 
-          {/* Success Message */}
-          {success && (
-            <div className="mb-6 sm:mb-8 bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-3">
-              <CheckCircle className="text-green-600 flex-shrink-0 mt-0.5" size={20} />
-              <div>
-                <h3 className="text-green-800 font-medium mb-1 text-sm sm:text-base">제보가 성공적으로 제출되었습니다!</h3>
-                <p className="text-green-700 text-sm">
-                  소중한 이야기 감사합니다. 담당자가 검토 후 연락드리겠습니다. 🎉
-                </p>
-              </div>
-            </div>
-          )}
-
           {/* Error Message */}
           {error && (
             <div className="mb-6 sm:mb-8 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
@@ -185,6 +179,28 @@ export function Submit() {
                 placeholder="likelion@example.com"
                 required
               />
+            </div>
+
+            {/* Category */}
+            <div>
+              <label htmlFor="cohort" className="block mb-2 text-[#1A1A1A] text-sm sm:text-base font-medium">
+                기수 <span className="text-[#FF6B00]">*</span>
+              </label>
+              <select
+                id="cohort"
+                name="cohort"
+                value={formData.cohort}
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6B00] focus:border-transparent text-sm sm:text-base"
+                required
+              >
+                <option value="">기수를 선택하세요</option>
+                {Array.from({ length: 14 }, (_, i) => i + 1).map((cohort) => (
+                  <option key={cohort} value={`${cohort}기`}>
+                    {cohort}기
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Category */}
@@ -240,17 +256,16 @@ export function Submit() {
                 className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6B00] focus:border-transparent resize-none text-sm sm:text-base"
                 placeholder="여러분의 이야기를 자유롭게 작성해주세요. 사진이나 링크가 있다면 함께 포함해주세요!"
                 required
-                minLength={100}
               />
               <p className="mt-2 text-xs sm:text-sm text-gray-500">
-                최소 100자 이상 작성해주세요. 구체적인 경험과 배운 점을 공유해주시면 좋습니다! (현재: {formData.content.length}자)
+                작성 글자 수: {formData.content.length}자
               </p>
             </div>
 
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={submitting || formData.content.length < 100}
+              disabled={submitting}
               className="w-full bg-[#FF6B00] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-lg hover:bg-[#E56000] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-base sm:text-lg font-medium"
             >
               {submitting ? (
@@ -266,6 +281,7 @@ export function Submit() {
               )}
             </button>
           </form>
+
         </div>
       </section>
 

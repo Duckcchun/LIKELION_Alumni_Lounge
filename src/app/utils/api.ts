@@ -42,6 +42,7 @@ export interface Newsletter {
 export interface Submission {
   name: string;
   email: string;
+  cohort: string;
   category: string;
   title: string;
   content: string;

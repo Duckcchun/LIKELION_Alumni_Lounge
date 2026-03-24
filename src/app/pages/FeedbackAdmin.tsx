@@ -62,7 +62,7 @@ export function FeedbackAdmin() {
   };
 
   const handleResetNewsletters = async () => {
-    if (!confirm('뉴스레터를 3월만 남기고 초기화하시겠습니까? (1월, 2월 삭제)')) {
+    if (!confirm('뉴스레터를 2026년 3월~5월 데이터로 초기화하시겠습니까?')) {
       return;
     }
 
@@ -75,7 +75,7 @@ export function FeedbackAdmin() {
     setResetting(true);
     try {
       const data = await resetNewslettersApi(adminToken);
-      alert('✅ 뉴스레터가 3월만 남도록 초기화되었습니다!');
+      alert('✅ 뉴스레터가 2026년 3월~5월 기준으로 초기화되었습니다!');
       console.log(data);
     } catch (err) {
       console.error('Error resetting newsletters:', err);
@@ -129,7 +129,7 @@ export function FeedbackAdmin() {
               className="inline-flex items-center gap-2 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-md"
             >
               <Trash2 size={18} />
-              {resetting ? '초기화 중...' : '뉴스레터 초기화 (3월만 남김)'}
+              {resetting ? '초기화 중...' : '뉴스레터 초기화 (3~5월)'}
             </button>
             <button
               onClick={() => fetchFeedbacks()}
