@@ -31,10 +31,13 @@ export function FeedbackAdmin() {
 
   useEffect(() => {
     const adminToken = sessionStorage.getItem(ADMIN_TOKEN_KEY);
+    console.log('[DEBUG] Admin token from sessionStorage:', adminToken);
     if (!adminToken) {
+      console.log('[DEBUG] No admin token found, redirecting to /feedback');
       navigate('/feedback');
       return;
     }
+    console.log('[DEBUG] Admin token found, fetching feedbacks...');
     fetchFeedbacks(adminToken);
   }, []);
 

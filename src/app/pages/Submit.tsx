@@ -3,17 +3,22 @@ import { useState } from 'react';
 import { submitStory } from '../utils/api';
 import { toast } from 'sonner';
 
+const MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024;
+
 export function Submit() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    cohort: '',
+    cohort: '14기',
     category: '',
     title: '',
     content: '',
+    imageDataUrl: '',
+    imageName: '',
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>('');
 
   const categories = [
     {
@@ -58,11 +63,14 @@ export function Submit() {
       setFormData({
         name: '',
         email: '',
-        cohort: '',
+        cohort: '14기',
         category: '',
         title: '',
         content: '',
+        imageDataUrl: '',
+        imageName: '',
       });
+      setImagePreview('');
     } catch (err) {
       console.error('Failed to submit story:', err);
       setError('제보 제출에 실패했습니다. 다시 시도해주세요.');
@@ -81,20 +89,64 @@ export function Submit() {
     setError(null);
   };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      setError('이미지 파일만 첨부할 수 있습니다.');
+      e.target.value = '';
+      return;
+    }
+
+    if (file.size > MAX_IMAGE_SIZE_BYTES) {
+      setError('이미지 용량은 2MB 이하만 첨부할 수 있습니다.');
+      e.target.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === 'string' ? reader.result : '';
+      setFormData((prev) => ({
+        ...prev,
+        imageDataUrl: result,
+        imageName: file.name,
+      }));
+      setImagePreview(result);
+      setError(null);
+    };
+    reader.onerror = () => {
+      setError('이미지를 읽는 중 오류가 발생했습니다. 다시 시도해주세요.');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const clearImage = () => {
+    setFormData((prev) => ({
+      ...prev,
+      imageDataUrl: '',
+      imageName: '',
+    }));
+    setImagePreview('');
+  };
+
   return (
     <div className="min-h-screen bg-[#F5F5F5]">
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-[#1A1A1A] to-[#2A2A2A] text-white py-12 sm:py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="inline-block px-4 py-2 bg-[#FF6B00] rounded-full text-sm mb-4">
-            나의 이야기 공유하기
+            활동 공유
           </div>
           <h1 className="text-3xl sm:text-4xl md:text-5xl mb-4">
-            알럼나이 <span className="text-[#FF6B00]">제보하기</span>
+            활동 <span className="text-[#FF6B00]">제보하기</span>
           </h1>
           <p className="text-lg sm:text-xl text-gray-300 max-w-2xl mx-auto leading-relaxed">
-            여러분의 멋진 이야기를 들려주세요!<br />
-            다음 뉴스레터의 주인공은 바로 당신입니다.
+            이번 달 활동들을 모아<br />
+            알럼나이 선배님들께 공유합니다.
           </p>
         </div>
       </section>
@@ -102,9 +154,9 @@ export function Submit() {
       {/* Categories */}
       <section className="py-8 sm:py-12">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-2xl sm:text-3xl text-[#1A1A1A] text-center mb-4">어떤 이야기를 나눠주실 건가요?</h2>
+          <h2 className="text-2xl sm:text-3xl text-[#1A1A1A] text-center mb-4">어떤 14기 활동을 공유할까요?</h2>
           <p className="text-gray-600 text-center mb-8 sm:mb-12 text-sm sm:text-base">
-            주제는 자유! 아래 카테고리를 참고해주세요 ✨
+            아래 카테고리를 참고해서 활동 소식을 남겨주세요.
           </p>
 
           <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-12">
@@ -130,7 +182,7 @@ export function Submit() {
           <div className="text-center mb-6 sm:mb-8">
             <h2 className="text-2xl sm:text-3xl text-[#1A1A1A] mb-4">제보 양식</h2>
             <p className="text-gray-600 text-sm sm:text-base">
-              아래 양식을 작성하시면 담당자가 검토 후 뉴스레터에 포함될 예정입니다.
+              작성해주신 내용은 검토 후 알럼나이 뉴스레터에 반영됩니다.
             </p>
           </div>
 
@@ -181,26 +233,20 @@ export function Submit() {
               />
             </div>
 
-            {/* Category */}
+            {/* Cohort */}
             <div>
               <label htmlFor="cohort" className="block mb-2 text-[#1A1A1A] text-sm sm:text-base font-medium">
-                기수 <span className="text-[#FF6B00]">*</span>
+                대상 기수
               </label>
-              <select
+              <input
+                type="text"
                 id="cohort"
                 name="cohort"
                 value={formData.cohort}
-                onChange={handleInputChange}
                 className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6B00] focus:border-transparent text-sm sm:text-base"
-                required
-              >
-                <option value="">기수를 선택하세요</option>
-                {Array.from({ length: 14 }, (_, i) => i + 1).map((cohort) => (
-                  <option key={cohort} value={`${cohort}기`}>
-                    {cohort}기
-                  </option>
-                ))}
-              </select>
+                readOnly
+              />
+              <p className="mt-2 text-xs sm:text-sm text-gray-500">현재는 활동 제보를 받고 있어요.</p>
             </div>
 
             {/* Category */}
@@ -254,12 +300,49 @@ export function Submit() {
                 onChange={handleInputChange}
                 rows={8}
                 className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6B00] focus:border-transparent resize-none text-sm sm:text-base"
-                placeholder="여러분의 이야기를 자유롭게 작성해주세요. 사진이나 링크가 있다면 함께 포함해주세요!"
+                placeholder="활동 내용, 진행 과정, 결과, 사진/링크를 함께 적어주세요."
                 required
               />
               <p className="mt-2 text-xs sm:text-sm text-gray-500">
                 작성 글자 수: {formData.content.length}자
               </p>
+            </div>
+
+            {/* Image Attachment */}
+            <div>
+              <label htmlFor="image" className="block mb-2 text-[#1A1A1A] text-sm sm:text-base font-medium">
+                사진 첨부 (선택)
+              </label>
+              <input
+                type="file"
+                id="image"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6B00] focus:border-transparent text-sm sm:text-base"
+              />
+              <p className="mt-2 text-xs sm:text-sm text-gray-500">
+                JPG, PNG 등 이미지 1장 (최대 2MB)
+              </p>
+
+              {imagePreview && (
+                <div className="mt-4 rounded-xl border border-gray-200 bg-white p-4">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <p className="text-sm text-gray-700 truncate">첨부 파일: {formData.imageName}</p>
+                    <button
+                      type="button"
+                      onClick={clearImage}
+                      className="text-sm text-red-600 hover:text-red-700 font-medium"
+                    >
+                      첨부 제거
+                    </button>
+                  </div>
+                  <img
+                    src={imagePreview}
+                    alt="첨부 이미지 미리보기"
+                    className="max-h-72 w-full rounded-lg object-contain bg-gray-50"
+                  />
+                </div>
+              )}
             </div>
 
             {/* Submit Button */}
@@ -276,7 +359,7 @@ export function Submit() {
               ) : (
                 <>
                   <Send size={20} />
-                  제보하기
+                  활동 제보하기
                 </>
               )}
             </button>
@@ -294,34 +377,28 @@ export function Submit() {
             <div className="bg-[#F5F5F5] rounded-xl p-6">
               <div className="text-xl sm:text-2xl mb-3">✅ 이런 내용 환영해요!</div>
               <ul className="space-y-2 text-gray-700 text-sm sm:text-base">
-                <li>• 창업/사이드 프로젝트 런칭 소식</li>
-                <li>• 이직/취업 성공 스토리</li>
-                <li>• 오픈소스 기여 경험</li>
-                <li>• 기술 블로그 포스팅</li>
-                <li>• 해커톤 수상 소식</li>
-                <li>• 컨퍼런스 발표 경험</li>
+                <li>• 세션/스터디 운영 후기</li>
+                <li>• 팀 프로젝트 데모데이 결과</li>
+                <li>• 해커톤/공모전 참가 및 수상 소식</li>
+                <li>• 파트별(기획·디자인·개발) 협업 사례</li>
+                <li>• 커뮤니티 행사 스케치</li>
+                <li>• 다음 기수에 전하고 싶은 배운 점</li>
               </ul>
             </div>
 
             <div className="bg-[#F5F5F5] rounded-xl p-6">
               <div className="text-xl sm:text-2xl mb-3">📌 작성 팁</div>
               <ul className="space-y-2 text-gray-700 text-sm sm:text-base">
-                <li>• 구체적인 수치와 결과를 포함해주세요</li>
-                <li>• 과정에서 배운 점을 공유해주세요</li>
-                <li>• 다른 알럼나이에게 도움이 될 팁을 담아주세요</li>
-                <li>• 사진이나 링크가 있다면 함께 첨부해주세요</li>
+                <li>• 언제, 어떤 활동이었는지 먼저 적어주세요</li>
+                <li>• 참여 인원/성과를 숫자로 남겨주세요</li>
+                <li>• 시행착오와 해결 과정을 함께 알려주세요</li>
+                <li>• 사진/링크를 넣으면 뉴스레터 편집에 도움이 됩니다</li>
               </ul>
             </div>
-          </div>
-
-          <div className="mt-6 sm:mt-8 bg-[#1A1A1A] text-white rounded-xl p-6 text-center">
-            <p className="text-sm leading-relaxed">
-              제보해주신 모든 분께 감사드립니다! 🙏<br />
-              여러분의 이야기가 다른 알럼나이들에게 큰 영감이 됩니다.
-            </p>
           </div>
         </div>
       </section>
     </div>
+
   );
-}
+  }

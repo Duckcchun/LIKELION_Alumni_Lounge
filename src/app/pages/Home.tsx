@@ -1,34 +1,44 @@
-import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Calendar, Archive, Loader2, AlertCircle, RefreshCw, Inbox, Sparkles } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router';
+import { ChevronLeft, ChevronRight, Calendar, Archive, Loader2, AlertCircle, RefreshCw, Inbox } from 'lucide-react';
 import { getNewsletters, Newsletter } from '../utils/api';
 import likelionLogo from '../../assets/0e22b8d85e32254db31b5fd548862b4df3d4b0a1.png';
 
-const NEWSLETTER_IMAGE_FALLBACK =
-  'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=80';
+const NEWSLETTER_DETAIL_URL = 'https://stib.ee/RouL';
 
 function NewsletterImage({ src, alt, className }: { src: string; alt: string; className: string }) {
+  const [hasError, setHasError] = useState(false);
+  const normalizedSrc = (src || '').trim();
+
+  if (!normalizedSrc || hasError) {
+    return (
+      <div
+        role="img"
+        aria-label={`${alt} 이미지 없음`}
+        className={`${className} bg-linear-to-br from-gray-100 to-gray-200`}
+      />
+    );
+  }
+
   return (
     <img
-      src={src}
+      src={normalizedSrc}
       alt={alt}
       className={className}
       loading="lazy"
-      onError={(event) => {
-        const target = event.currentTarget;
-        if (target.src !== NEWSLETTER_IMAGE_FALLBACK) {
-          target.src = NEWSLETTER_IMAGE_FALLBACK;
-        }
-      }}
+      onError={() => setHasError(true)}
     />
   );
 }
 
 export function Home() {
+  const navigate = useNavigate();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showArchive, setShowArchive] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [newsletters, setNewsletters] = useState<Newsletter[]>([]);
+  const newsletterSectionRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     loadNewsletters();
@@ -152,24 +162,24 @@ export function Home() {
           </h1>
 
           <p className="text-base sm:text-lg md:text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-            함께 성장한 우리들의 이야기를 나누고,<br className="hidden sm:block" />
-            끈끈한 네트워킹을 이어가는 <span className="text-[#FF6B00] font-semibold">공식 커뮤니티</span>
+            지금 진행 중인 <span className="text-[#FF6B00] font-semibold">14기 활동</span>을 모아<br className="hidden sm:block" />
+            알럼나이 선배님들께 전하는 월간 뉴스레터입니다.
           </p>
         </div>
       </section>
 
-      <section className="py-8 sm:py-12 -mt-8 relative z-20 animate-fade-in">
+      <section ref={newsletterSectionRef} className="pt-10 sm:pt-14 pb-8 sm:pb-12 relative z-20 animate-fade-in">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-6 sm:mb-8 opacity-0 animate-slide-up" style={{ animationDelay: '0.2s', animationFillMode: 'forwards' }}>
             <h2 className="text-2xl sm:text-3xl text-[#1A1A1A] font-bold flex items-center gap-2">
-              <span className="text-[#FF6B00]">📰</span> 이번 달 뉴스레터
+              <span className="text-[#FF6B00]">📰</span> 활동 뉴스레터
             </h2>
             <button
               onClick={() => setShowArchive(!showArchive)}
               className="flex items-center gap-2 text-[#FF6B00] hover:underline text-sm sm:text-base font-medium transition-all hover:gap-3"
             >
               <Archive size={20} />
-              <span className="hidden sm:inline">{showArchive ? '접기' : '지난 뉴스레터 보기'}</span>
+              <span className="hidden sm:inline">{showArchive ? '접기' : '지난 활동 뉴스레터 보기'}</span>
               <span className="sm:hidden">{showArchive ? '접기' : '아카이브'}</span>
             </button>
           </div>
@@ -191,7 +201,6 @@ export function Home() {
 
               <div className="p-6 sm:p-8 flex flex-col justify-center bg-linear-to-br from-white to-orange-50/30">
                 <div className="inline-flex items-center gap-2 text-sm font-semibold text-[#FF6B00] mb-3 bg-orange-100 px-3 py-1 rounded-full w-fit">
-                  <Sparkles size={14} />
                   {currentNewsletter.month}
                 </div>
                 <h3 className="text-xl sm:text-2xl md:text-3xl mb-4 font-bold text-gray-900 leading-tight">{currentNewsletter.title}</h3>
@@ -202,7 +211,7 @@ export function Home() {
                 <div className="space-y-2 mb-6">
                   <div className="font-semibold text-sm text-gray-700 flex items-center gap-2">
                     <span className="w-1 h-4 bg-[#FF6B00] rounded-full"></span>
-                    주요 내용
+                    14기 활동 하이라이트
                   </div>
                   {currentNewsletter.highlights.map((highlight, idx) => (
                     <div key={idx} className="flex items-start gap-3 group">
@@ -212,8 +221,12 @@ export function Home() {
                   ))}
                 </div>
 
-                <button className="bg-linear-to-r from-[#FF6B00] to-[#E56000] text-white px-6 py-3 rounded-xl hover:shadow-xl hover:scale-[1.02] transition-all w-full md:w-auto text-sm sm:text-base font-semibold flex items-center justify-center gap-2">
-                  전체 뉴스레터 읽기
+                <button
+                  type="button"
+                  onClick={() => window.open(NEWSLETTER_DETAIL_URL, '_blank', 'noopener,noreferrer')}
+                  className="bg-linear-to-r from-[#FF6B00] to-[#E56000] text-white px-6 py-3 rounded-xl hover:shadow-xl hover:scale-[1.02] transition-all w-full md:w-auto text-sm sm:text-base font-semibold flex items-center justify-center gap-2"
+                >
+                  이번 호 자세히 보기
                   <span className="group-hover:translate-x-1 transition-transform">→</span>
                 </button>
               </div>
@@ -262,10 +275,19 @@ export function Home() {
               뉴스레터 아카이브
             </h2>
             <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
-              {newsletters.map((newsletter) => (
-                <div
+              {newsletters.map((newsletter, idx) => (
+                <button
                   key={newsletter.id}
-                  className="bg-white rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer border border-gray-100 hover:border-[#FF6B00] group"
+                  type="button"
+                  onClick={() => {
+                    setCurrentIndex(idx);
+                    setShowArchive(false);
+                    requestAnimationFrame(() => {
+                      newsletterSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    });
+                  }}
+                  className="w-full appearance-none bg-white rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer border border-gray-100 hover:border-[#FF6B00] group text-left p-0"
+                  aria-label={`${newsletter.month} 뉴스레터 보기`}
                 >
                   <div className="relative h-48 overflow-hidden">
                     <NewsletterImage
@@ -279,12 +301,14 @@ export function Home() {
                     </div>
                   </div>
                   <div className="p-4">
-                    <h3 className="mb-2 text-sm sm:text-base font-bold text-gray-900 group-hover:text-[#FF6B00] transition-colors">{newsletter.title}</h3>
-                    <p className="text-sm text-gray-600 line-clamp-2">
-                      {newsletter.summary}
+                    <h3 className="mb-2 min-h-[3.25rem] line-clamp-2 text-sm sm:text-base font-bold text-gray-900 group-hover:text-[#FF6B00] transition-colors">
+                      {newsletter.title}
+                    </h3>
+                    <p className={`text-sm line-clamp-2 min-h-[3.5rem] ${newsletter.summary?.trim() ? 'text-gray-600' : 'text-gray-400'}`}>
+                      {newsletter.summary?.trim() || '뉴스레터 준비 중입니다.'}
                     </p>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           </div>
@@ -299,17 +323,17 @@ export function Home() {
 
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
           <h2 className="text-3xl sm:text-4xl md:text-5xl mb-6 font-bold">
-            다음 뉴스레터의 <span className="bg-linear-to-r from-[#FF6B00] to-[#FF8534] bg-clip-text text-transparent">주인공</span>이 되어보세요!
+            알럼나이에게 공유할 <span className="bg-linear-to-r from-[#FF6B00] to-[#FF8534] bg-clip-text text-transparent">활동</span>을 제보해주세요
           </h2>
           <p className="text-gray-300 mb-8 sm:mb-10 leading-relaxed text-base sm:text-lg max-w-2xl mx-auto">
-            여러분의 커리어 스토리, 토이 프로젝트, 창업 경험을<br className="hidden sm:block" />
-            알럼나이 커뮤니티와 공유해주세요.
+            세션, 스터디, 프로젝트, 행사 후기를 모아<br className="hidden sm:block" />
+            다음 뉴스레터에서 선배님들과 함께 나눕니다.
           </p>
           <button
-            onClick={() => window.location.href = '/submit'}
+            onClick={() => navigate('/submit')}
             className="bg-linear-to-r from-[#FF6B00] to-[#E56000] text-white px-8 sm:px-10 py-4 sm:py-5 rounded-xl hover:shadow-2xl hover:scale-105 transition-all inline-flex items-center gap-3 text-base sm:text-lg font-bold group"
           >
-            <span>지금 제보하기</span>
+            <span>활동 제보하기</span>
             <span className="group-hover:translate-x-1 transition-transform text-xl">→</span>
           </button>
         </div>

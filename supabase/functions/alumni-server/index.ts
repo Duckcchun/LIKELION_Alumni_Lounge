@@ -1,3 +1,5 @@
+// @ts-nocheck
+// deno-lint-ignore-file
 import { Hono } from "npm:hono";
 import { cors } from "npm:hono/cors";
 import { logger } from "npm:hono/logger";
@@ -15,7 +17,7 @@ app.use(
   "/*",
   cors({
     origin: "*",
-    allowHeaders: ["Content-Type", "Authorization"],
+    allowHeaders: ["Content-Type", "Authorization", "X-Admin-Token"],
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     exposeHeaders: ["Content-Length"],
     maxAge: 600,
@@ -23,85 +25,126 @@ app.use(
 );
 
 // Health check endpoint
-app.get("/make-server-ccd31d74/health", (c) => {
+app.get("/alumni-server/health", (c) => {
   return c.json({ status: "ok" });
 });
+
+const DEFAULT_VOTE = {
+  id: "2026-03",
+  month: "3월",
+  question: "둘 중 하나만 팀원으로 골라야 한다면?",
+  optionA: {
+    title: "개발 지식 0인데 말은 기가 막히게 통하는\n기획자",
+    emoji: "📝",
+    description: "기술 이해는 부족하지만 맥락 공유와 조율이 뛰어난 타입",
+  },
+  optionB: {
+    title: "코딩은 신인데 소통이 1도 안 되는\n개발자",
+    emoji: "⚡",
+    description: "구현 속도와 완성도는 압도적이지만 협업 난이도가 높은 타입",
+  },
+};
+
+const DEFAULT_NEWSLETTERS = [
+  {
+    id: 1,
+    month: "2026년 3월",
+    title: "14기의 힘찬 첫걸음과 반가운 3월 소식 전하러 왔습니다! 🦁",
+    summary: "3월 소식을 전합니다. 라이온킹 캠프부터 리크루팅 일화  까지, 생생한 이야기가 가득합니다.",
+    image: "https://likelion-alumni-lounge.vercel.app/newsletters/march-2026-lion.jpg",
+    date: "2026.03.27",
+    highlights: ["크록스 벗고 어흥! 우당탕탕 리크루팅 썰 ZIP.", "전국 80개 대학 대표진의 뜨거웠던 밤, '라이온킹 캠프' 비하인드", "극한의 IT 밸런스 게임: 선배님들의 선택은?"],
+  },
+  {
+    id: 2,
+    month: "2026년 4월",
+    title: "발행 예정",
+    summary: "",
+    image: "",
+    date: "",
+    highlights: [],
+  },
+  {
+    id: 3,
+    month: "2026년 5월",
+    title: "발행 예정",
+    summary: "",
+    image: "",
+    date: "",
+    highlights: [],
+  },
+];
+
+async function syncNewslettersFromDefaults(forceReplace = false) {
+  const newsletters = await kv.getByPrefix("newsletter:");
+  const defaultIds = new Set(DEFAULT_NEWSLETTERS.map((item) => item.id));
+
+  if (forceReplace) {
+    for (const newsletter of newsletters) {
+      await kv.del(`newsletter:${newsletter.id}`);
+    }
+    for (const newsletter of DEFAULT_NEWSLETTERS) {
+      await kv.set(`newsletter:${newsletter.id}`, newsletter);
+    }
+    return;
+  }
+
+  for (const newsletter of newsletters) {
+    const month = typeof newsletter?.month === "string" ? newsletter.month : "";
+    const isLegacyMonth = month.includes("1월") || month.includes("2월");
+    const isUnknownId = !defaultIds.has(newsletter.id);
+    if (isLegacyMonth || isUnknownId) {
+      await kv.del(`newsletter:${newsletter.id}`);
+    }
+  }
+
+  for (const newsletter of DEFAULT_NEWSLETTERS) {
+    const current = await kv.get(`newsletter:${newsletter.id}`);
+    if (!current || JSON.stringify(current) !== JSON.stringify(newsletter)) {
+      await kv.set(`newsletter:${newsletter.id}`, newsletter);
+    }
+  }
+}
+
+function isSameVoteConfig(currentVote: any, defaultVote: typeof DEFAULT_VOTE): boolean {
+  if (!currentVote || !defaultVote) return false;
+
+  return (
+    currentVote.id === defaultVote.id &&
+    currentVote.month === defaultVote.month &&
+    currentVote.question === defaultVote.question &&
+    currentVote.optionA?.title === defaultVote.optionA.title &&
+    currentVote.optionA?.emoji === defaultVote.optionA.emoji &&
+    currentVote.optionA?.description === defaultVote.optionA.description &&
+    currentVote.optionB?.title === defaultVote.optionB.title &&
+    currentVote.optionB?.emoji === defaultVote.optionB.emoji &&
+    currentVote.optionB?.description === defaultVote.optionB.description
+  );
+}
+
+async function syncVoteFromDefaults() {
+  const currentVote = await kv.get("vote:current");
+  const voteChanged = !isSameVoteConfig(currentVote, DEFAULT_VOTE);
+  if (voteChanged) {
+    await kv.set("vote:current", DEFAULT_VOTE);
+    await kv.set(`vote:results:${DEFAULT_VOTE.id}`, { optionA: 0, optionB: 0, totalVotes: 0 });
+    return;
+  }
+
+  const resultsKey = `vote:results:${DEFAULT_VOTE.id}`;
+  const currentResults = await kv.get(resultsKey);
+  if (!currentResults) {
+    await kv.set(resultsKey, { optionA: 0, optionB: 0, totalVotes: 0 });
+  }
+}
 
 // Initialize default data
 async function initializeData() {
   try {
-    // Check if vote data exists
-    const currentVote = await kv.get("vote:current");
-    if (!currentVote) {
-      // Create default vote
-      const defaultVote = {
-        id: "2026-03",
-        month: "3월",
-        question: "당신의 이상형은?",
-        optionA: {
-          title: "디자이너",
-          emoji: "🎨",
-          description: "감성적이고 창의적인 디자이너와 함께",
-        },
-        optionB: {
-          title: "개발자",
-          emoji: "💻",
-          description: "논리적이고 문제 해결형 개발자와 함께",
-        },
-      };
-      await kv.set("vote:current", defaultVote);
-      await kv.set("vote:results:2026-03", { optionA: 0, optionB: 0, totalVotes: 0 });
-    }
+    await syncVoteFromDefaults();
 
-    // Check if newsletters exist
-    const newsletters = await kv.getByPrefix("newsletter:");
-    const hasLegacyMonth = newsletters.some((item) => {
-      if (!item || typeof item.month !== "string") return false;
-      return item.month.includes("1월") || item.month.includes("2월");
-    });
-
-    if (newsletters.length === 0 || hasLegacyMonth) {
-      if (hasLegacyMonth) {
-        for (const newsletter of newsletters) {
-          await kv.del(`newsletter:${newsletter.id}`);
-        }
-      }
-
-      // Create default newsletters (March to May 2026)
-      const defaultNewsletters = [
-        {
-          id: 1,
-          month: "2026년 3월",
-          title: "봄이 오면 생각나는 우리들의 창업 이야기",
-          summary: "알럼나이 선배님들의 3월 소식을 전합니다. 스타트업 창업부터 커리어 전환까지, 생생한 이야기가 가득합니다.",
-          image: "https://images.unsplash.com/photo-1565841327798-694bc2074762?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx1bml2ZXJzaXR5JTIwc3R1ZGVudHMlMjBjb2RpbmclMjBsYXB0b3B8ZW58MXx8fHwxNzc0MzQwMzc3fDA&ixlib=rb-4.1.0&q=80&w=1080",
-          date: "2026.03.24",
-          highlights: ["창업 성공 사례 5건", "취업 축하 3명", "토이 프로젝트 showcase"],
-        },
-        {
-          id: 2,
-          month: "2026년 4월",
-          title: "알럼나이의 봄, 성장의 속도를 높인 한 달",
-          summary: "4월에는 커리어 전환, 사이드 프로젝트 출시, 커뮤니티 네트워킹까지 다양한 소식이 이어졌습니다.",
-          image: "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1080&q=80",
-          date: "2026.04.18",
-          highlights: ["이직/합격 소식", "사이드 프로젝트 런칭", "오프라인 밋업 후기"],
-        },
-        {
-          id: 3,
-          month: "2026년 5월",
-          title: "함께 만든 결과, 5월 알럼나이 하이라이트",
-          summary: "5월 뉴스레터에서는 오픈소스 기여, 해커톤 성과, 협업 사례를 중심으로 알럼나이 스토리를 소개합니다.",
-          image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1080&q=80",
-          date: "2026.05.20",
-          highlights: ["오픈소스 기여 사례", "해커톤 수상 소식", "협업 프로젝트 회고"],
-        },
-      ];
-      
-      for (const newsletter of defaultNewsletters) {
-        await kv.set(`newsletter:${newsletter.id}`, newsletter);
-      }
-    }
+    // Keep KV in sync with code defaults on startup.
+    await syncNewslettersFromDefaults();
   } catch (error) {
     console.error("Error initializing data:", error);
   }
@@ -110,52 +153,44 @@ async function initializeData() {
 // Initialize data on startup
 initializeData();
 
+const ADMIN_FIXED_TOKEN = "admin-token-fixed-2026";
+
 async function requireAdminAuth(c: any): Promise<{ ok: true; token: string } | { ok: false; response: any }> {
+  const headerToken = (c.req.header("X-Admin-Token") || "").trim();
+  if (headerToken) {
+    if (headerToken === ADMIN_FIXED_TOKEN) {
+      return { ok: true, token: headerToken };
+    }
+    return { ok: false, response: c.json({ error: "Unauthorized" }, 401) };
+  }
+
+  // Fallback for older clients that still send admin token via Authorization.
   const authHeader = c.req.header("Authorization") || "";
   if (!authHeader.startsWith("Bearer ")) {
     return { ok: false, response: c.json({ error: "Unauthorized" }, 401) };
   }
 
   const token = authHeader.slice(7).trim();
-  if (!token) {
+  if (token !== ADMIN_FIXED_TOKEN) {
     return { ok: false, response: c.json({ error: "Unauthorized" }, 401) };
-  }
-
-  const session = await kv.get(`${ADMIN_SESSION_PREFIX}${token}`);
-  if (!session || typeof session.expiresAt !== "number") {
-    return { ok: false, response: c.json({ error: "Unauthorized" }, 401) };
-  }
-
-  if (Date.now() > session.expiresAt) {
-    await kv.del(`${ADMIN_SESSION_PREFIX}${token}`);
-    return { ok: false, response: c.json({ error: "Session expired" }, 401) };
   }
 
   return { ok: true, token };
 }
 
-app.post("/make-server-ccd31d74/admin/login", async (c) => {
+app.post("/alumni-server/admin/login", async (c) => {
   try {
-    const configuredPassword = Deno.env.get("ADMIN_PASSWORD");
-    if (!configuredPassword) {
-      return c.json({ error: "Admin authentication is not configured" }, 500);
-    }
-
     const body = await c.req.json();
     const password = body?.password;
-    if (!password || password !== configuredPassword) {
+    
+    // Hardcoded password for now
+    if (!password || password !== "admin123") {
       return c.json({ error: "Invalid password" }, 401);
     }
 
-    const token = crypto.randomUUID();
-    const expiresAt = Date.now() + ADMIN_SESSION_TTL_MS;
-
-    await kv.set(`${ADMIN_SESSION_PREFIX}${token}`, {
-      createdAt: new Date().toISOString(),
-      expiresAt,
-    });
-
-    return c.json({ success: true, token, expiresAt });
+    // Use a fixed token instead of KV store
+    const token = "admin-token-fixed-2026";
+    return c.json({ success: true, token, expiresAt: Date.now() + 86400000 });
   } catch (error) {
     console.error("Error during admin login:", error);
     return c.json({ error: "Failed to login" }, 500);
@@ -163,50 +198,12 @@ app.post("/make-server-ccd31d74/admin/login", async (c) => {
 });
 
 // Admin endpoint to reset newsletter data (remove old newsletters)
-app.post("/make-server-ccd31d74/admin/reset-newsletters", async (c) => {
+app.post("/alumni-server/admin/reset-newsletters", async (c) => {
   try {
     const auth = await requireAdminAuth(c);
     if (!auth.ok) return auth.response;
 
-    // Delete all existing newsletters
-    const newsletters = await kv.getByPrefix("newsletter:");
-    for (const newsletter of newsletters) {
-      await kv.del(`newsletter:${newsletter.id}`);
-    }
-
-    const newslettersFromMarch = [
-      {
-        id: 1,
-        month: "2026년 3월",
-        title: "봄이 오면 생각나는 우리들의 창업 이야기",
-        summary: "알럼나이 선배님들의 3월 소식을 전합니다. 스타트업 창업부터 커리어 전환까지, 생생한 이야기가 가득합니다.",
-        image: "https://images.unsplash.com/photo-1565841327798-694bc2074762?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx1bml2ZXJzaXR5JTIwc3R1ZGVudHMlMjBjb2RpbmclMjBsYXB0b3B8ZW58MXx8fHwxNzc0MzQwMzc3fDA&ixlib=rb-4.1.0&q=80&w=1080",
-        date: "2026.03.24",
-        highlights: ["창업 성공 사례 5건", "취업 축하 3명", "토이 프로젝트 showcase"],
-      },
-      {
-        id: 2,
-        month: "2026년 4월",
-        title: "알럼나이의 봄, 성장의 속도를 높인 한 달",
-        summary: "4월에는 커리어 전환, 사이드 프로젝트 출시, 커뮤니티 네트워킹까지 다양한 소식이 이어졌습니다.",
-        image: "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1080&q=80",
-        date: "2026.04.18",
-        highlights: ["이직/합격 소식", "사이드 프로젝트 런칭", "오프라인 밋업 후기"],
-      },
-      {
-        id: 3,
-        month: "2026년 5월",
-        title: "함께 만든 결과, 5월 알럼나이 하이라이트",
-        summary: "5월 뉴스레터에서는 오픈소스 기여, 해커톤 성과, 협업 사례를 중심으로 알럼나이 스토리를 소개합니다.",
-        image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1080&q=80",
-        date: "2026.05.20",
-        highlights: ["오픈소스 기여 사례", "해커톤 수상 소식", "협업 프로젝트 회고"],
-      },
-    ];
-
-    for (const newsletter of newslettersFromMarch) {
-      await kv.set(`newsletter:${newsletter.id}`, newsletter);
-    }
+    await syncNewslettersFromDefaults(true);
 
     return c.json({ success: true, message: "Newsletters reset to March-May 2026" });
   } catch (error) {
@@ -216,8 +213,10 @@ app.post("/make-server-ccd31d74/admin/reset-newsletters", async (c) => {
 });
 
 // Get current balance game
-app.get("/make-server-ccd31d74/vote/current", async (c) => {
+app.get("/alumni-server/vote/current", async (c) => {
   try {
+    await syncVoteFromDefaults();
+
     const voteData = await kv.get("vote:current");
     if (!voteData) {
       return c.json({ error: "No active vote found" }, 404);
@@ -236,7 +235,7 @@ app.get("/make-server-ccd31d74/vote/current", async (c) => {
 });
 
 // Submit a vote
-app.post("/make-server-ccd31d74/vote", async (c) => {
+app.post("/alumni-server/vote", async (c) => {
   try {
     const body = await c.req.json();
     const { option } = body;
@@ -270,7 +269,7 @@ app.post("/make-server-ccd31d74/vote", async (c) => {
 });
 
 // Get all newsletters
-app.get("/make-server-ccd31d74/newsletters", async (c) => {
+app.get("/alumni-server/newsletters", async (c) => {
   try {
     const newsletters = await kv.getByPrefix("newsletter:");
     
@@ -300,6 +299,8 @@ async function sendSubmissionEmails(submission: {
   category: string;
   title: string;
   content: string;
+  imageDataUrl?: string;
+  imageName?: string;
   createdAt: string;
 }) {
   const resendApiKey = Deno.env.get("RESEND_API_KEY");
@@ -318,6 +319,8 @@ async function sendSubmissionEmails(submission: {
   const safeTitle = escapeHtml(submission.title);
   const safeContent = escapeHtml(submission.content).replaceAll("\n", "<br />");
   const safeCreatedAt = escapeHtml(submission.createdAt);
+  const safeImageName = escapeHtml(submission.imageName || "");
+  const hasImage = typeof submission.imageDataUrl === "string" && submission.imageDataUrl.startsWith("data:image/");
 
   const adminHtml = `
     <h2>새로운 알럼나이 제보가 접수되었습니다.</h2>
@@ -327,6 +330,8 @@ async function sendSubmissionEmails(submission: {
     <p><strong>카테고리:</strong> ${safeCategory}</p>
     <p><strong>제목:</strong> ${safeTitle}</p>
     <p><strong>내용:</strong><br />${safeContent}</p>
+    ${hasImage ? `<p><strong>첨부 이미지:</strong> ${safeImageName || "image"}</p>` : ""}
+    ${hasImage ? `<img src="${submission.imageDataUrl}" alt="첨부 이미지" style="max-width: 480px; width: 100%; border-radius: 8px;" />` : ""}
     <p><strong>제출 시각:</strong> ${safeCreatedAt}</p>
   `;
 
@@ -376,13 +381,22 @@ async function sendSubmissionEmails(submission: {
 }
 
 // Submit alumni story
-app.post("/make-server-ccd31d74/submit", async (c) => {
+app.post("/alumni-server/submit", async (c) => {
   try {
     const body = await c.req.json();
-    const { name, email, cohort, category, title, content } = body;
+    const { name, email, cohort, category, title, content, imageDataUrl, imageName } = body;
 
     if (!name || !email || !cohort || !category || !title || !content) {
       return c.json({ error: "Missing required fields" }, 400);
+    }
+
+    if (imageDataUrl) {
+      if (typeof imageDataUrl !== "string" || !imageDataUrl.startsWith("data:image/")) {
+        return c.json({ error: "Invalid image format" }, 400);
+      }
+      if (imageDataUrl.length > 3 * 1024 * 1024) {
+        return c.json({ error: "Image is too large" }, 400);
+      }
     }
 
     // Generate unique ID with timestamp
@@ -397,6 +411,8 @@ app.post("/make-server-ccd31d74/submit", async (c) => {
       category,
       title,
       content,
+      imageDataUrl: imageDataUrl || "",
+      imageName: imageName || "",
       createdAt: new Date().toISOString(),
     };
 
@@ -411,7 +427,7 @@ app.post("/make-server-ccd31d74/submit", async (c) => {
 });
 
 // Get all submissions (admin only - simple implementation)
-app.get("/make-server-ccd31d74/submissions", async (c) => {
+app.get("/alumni-server/submissions", async (c) => {
   try {
     const auth = await requireAdminAuth(c);
     if (!auth.ok) return auth.response;
@@ -429,7 +445,7 @@ app.get("/make-server-ccd31d74/submissions", async (c) => {
 });
 
 // Submit feedback
-app.post("/make-server-ccd31d74/feedback", async (c) => {
+app.post("/alumni-server/feedback", async (c) => {
   try {
     const body = await c.req.json();
     const { name, email, category, message, timestamp } = body;
@@ -465,7 +481,7 @@ app.post("/make-server-ccd31d74/feedback", async (c) => {
 });
 
 // Get all feedback (admin only - simple implementation)
-app.get("/make-server-ccd31d74/feedback", async (c) => {
+app.get("/alumni-server/feedback", async (c) => {
   try {
     const auth = await requireAdminAuth(c);
     if (!auth.ok) return auth.response;

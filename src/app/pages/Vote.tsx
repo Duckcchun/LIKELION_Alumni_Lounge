@@ -29,6 +29,18 @@ export function Vote() {
   useEffect(() => {
     if (balanceGame) {
       const voteKey = VOTE_STORAGE_KEY + balanceGame.month;
+      const shouldResetVote = new URLSearchParams(window.location.search).get('resetVote') === '1';
+
+      // One-time local reset for testing: /vote?resetVote=1
+      if (shouldResetVote) {
+        localStorage.removeItem(voteKey);
+        setHasVoted(false);
+        setSelectedOption(null);
+        setShowResults(false);
+        window.history.replaceState({}, '', window.location.pathname);
+        return;
+      }
+
       const savedVote = localStorage.getItem(voteKey);
       if (savedVote) {
         setHasVoted(true);
@@ -126,7 +138,7 @@ export function Vote() {
             이달의 밸런스 게임
           </h1>
           <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto px-4">
-            알럼나이 선배님들의 선택은? 과몰입 주의! 🤔
+            참여자들의 선택은?
           </p>
           
           {/* Total Votes */}
@@ -169,11 +181,11 @@ export function Vote() {
             >
               <div className="text-center">
                 <div className="text-5xl sm:text-7xl mb-4">{balanceGame.optionA.emoji}</div>
-                <h2 className={`text-2xl sm:text-3xl mb-3 ${selectedOption === 'A' ? 'text-white' : ''}`}>
+                <h2 className={`text-2xl sm:text-3xl mb-3 leading-tight whitespace-pre-line break-keep text-balance ${selectedOption === 'A' ? 'text-white' : ''}`}>
                   {balanceGame.optionA.title}
                 </h2>
                 <p
-                  className={`text-base sm:text-lg leading-relaxed ${
+                  className={`text-base sm:text-lg leading-relaxed break-keep text-balance ${
                     selectedOption === 'A' ? 'text-white/90' : 'text-gray-600'
                   }`}
                 >
@@ -231,11 +243,11 @@ export function Vote() {
             >
               <div className="text-center">
                 <div className="text-5xl sm:text-7xl mb-4">{balanceGame.optionB.emoji}</div>
-                <h2 className={`text-2xl sm:text-3xl mb-3 ${selectedOption === 'B' ? 'text-white' : ''}`}>
+                <h2 className={`text-2xl sm:text-3xl mb-3 leading-tight whitespace-pre-line break-keep text-balance ${selectedOption === 'B' ? 'text-white' : ''}`}>
                   {balanceGame.optionB.title}
                 </h2>
                 <p
-                  className={`text-base sm:text-lg leading-relaxed ${
+                  className={`text-base sm:text-lg leading-relaxed break-keep text-balance ${
                     selectedOption === 'B' ? 'text-white/90' : 'text-gray-600'
                   }`}
                 >
@@ -288,23 +300,14 @@ export function Vote() {
             </div>
             <p className="text-gray-600 text-base sm:text-lg leading-relaxed">
               {selectedOption === 'A'
-                ? `${balanceGame.optionA.title}를 선택하셨군요! ${percentageA}%의 알럼나이가 같은 선택을 했습니다.`
-                : `${balanceGame.optionB.title}를 선택하셨군요! ${percentageB}%의 알럼나이가 같은 선택을 했습니다.`}
+                ? `${balanceGame.optionA.title}를 선택하셨군요! 참여자 중 ${percentageA}%가 같은 선택을 했습니다.`
+                : `${balanceGame.optionB.title}를 선택하셨군요! 참여자 중 ${percentageB}%가 같은 선택을 했습니다.`}
             </p>
             <p className="text-sm text-gray-500 mt-4">
               다음 달에도 재미있는 밸런스 게임으로 찾아뵙겠습니다! 🎉
             </p>
           </motion.div>
         )}
-
-        {/* Info Section */}
-        <div className="mt-8 sm:mt-12 bg-linear-to-r from-[#FF6B00] to-[#E56000] text-white rounded-2xl p-6 sm:p-8 text-center">
-          <h3 className="text-xl sm:text-2xl mb-3 font-bold">매달 새로운 밸런스 게임!</h3>
-          <p className="text-white/90 leading-relaxed max-w-2xl mx-auto text-sm sm:text-base">
-            커리어, 개발 스택, 취미 등 다양한 주제로 알럼나이 선배님들의 선택을 확인해보세요.
-            코딩 동아리 특유의 밈과 재미를 담은 질문들이 기다립니다!
-          </p>
-        </div>
       </div>
     </div>
   );

@@ -26,7 +26,7 @@ export function Header() {
   const navItems = [
     { path: '/', label: '홈' },
     { path: '/vote', label: '밸런스 게임' },
-    { path: '/submit', label: '알럼나이 제보' },
+    { path: '/submit', label: '활동 제보' },
     { path: '/feedback', label: '피드백' },
   ];
 

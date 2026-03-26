@@ -1,6 +1,6 @@
 import { projectId, publicAnonKey } from '/utils/supabase/info';
 
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-ccd31d74`;
+const API_BASE = `https://${projectId}.supabase.co/functions/v1/alumni-server`;
 
 const headers = {
   'Content-Type': 'application/json',
@@ -46,6 +46,8 @@ export interface Submission {
   category: string;
   title: string;
   content: string;
+  imageDataUrl?: string;
+  imageName?: string;
 }
 
 export interface AdminLoginResponse {
@@ -118,7 +120,7 @@ export async function getSubmissions(adminToken: string): Promise<Submission[]> 
   const response = await fetch(`${API_BASE}/submissions`, {
     headers: {
       ...headers,
-      Authorization: `Bearer ${adminToken}`,
+      'X-Admin-Token': adminToken,
     },
   });
   if (!response.ok) {
@@ -136,11 +138,12 @@ export async function adminLogin(password: string): Promise<AdminLoginResponse> 
     body: JSON.stringify({ password }),
   });
 
-  const data = await response.json();
   if (!response.ok) {
+    const data = await response.json();
     throw new Error(data.error || '관리자 로그인에 실패했습니다.');
   }
 
+  const data = await response.json();
   return data;
 }
 
@@ -149,15 +152,16 @@ export async function getFeedbacks(adminToken: string): Promise<FeedbackItem[]> 
   const response = await fetch(`${API_BASE}/feedback`, {
     headers: {
       ...headers,
-      Authorization: `Bearer ${adminToken}`,
+      'X-Admin-Token': adminToken,
     },
   });
 
-  const data = await response.json();
   if (!response.ok) {
+    const data = await response.json();
     throw new Error(data.error || '피드백을 불러오는데 실패했습니다.');
   }
 
+  const data = await response.json();
   return data.feedbacks || [];
 }
 
@@ -167,14 +171,15 @@ export async function resetNewsletters(adminToken: string): Promise<{ success: b
     method: 'POST',
     headers: {
       ...headers,
-      Authorization: `Bearer ${adminToken}`,
+      'X-Admin-Token': adminToken,
     },
   });
 
-  const data = await response.json();
   if (!response.ok) {
-    throw new Error(data.error || '초기화에 실패했습니다.');
+    const data = await response.json();
+    throw new Error(data.error || '뉴스레터 초기화에 실패했습니다.');
   }
 
+  const data = await response.json();
   return data;
 }

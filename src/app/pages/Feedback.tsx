@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { MessageCircle, Send, CheckCircle, Lock, X } from 'lucide-react';
 import { useNavigate } from 'react-router';
-import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { projectId, publicAnonKey } from '../../../utils/supabase/info';
 import { adminLogin } from '../utils/api';
 
 const ADMIN_TOKEN_KEY = 'alumni_admin_token';
@@ -75,7 +75,7 @@ export function Feedback() {
 
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-ccd31d74/feedback`,
+        `https://${projectId}.supabase.co/functions/v1/alumni-server/feedback`,
         {
           method: 'POST',
           headers: {
@@ -130,7 +130,7 @@ export function Feedback() {
             피드백 보내기
           </h1>
           <p className="text-gray-600 text-lg">
-            여러분의 소중한 의견이 알럼나이 라운지를 더 나은 곳으로 만듭니다
+            의견을 자유롭게 남겨주세요
           </p>
         </div>
 
@@ -139,9 +139,9 @@ export function Feedback() {
           <div className="mb-8 p-6 bg-green-50 border-2 border-green-200 rounded-xl flex items-center gap-3 animate-fadeIn">
             <CheckCircle className="text-green-600" size={24} />
             <div>
-              <h3 className="font-semibold text-green-900">전송 완료!</h3>
+              <h3 className="font-semibold text-green-900">전송 완료</h3>
               <p className="text-green-700 text-sm">
-                소중한 피드백 감사합니다. 빠른 시일 내에 검토하겠습니다.
+                피드백이 정상적으로 전송되었습니다.
               </p>
             </div>
           </div>
@@ -209,11 +209,11 @@ export function Feedback() {
               required
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-[#FF6B00] focus:outline-none transition-colors bg-white"
             >
-              <option value="bug">🐛 버그 제보</option>
-              <option value="feature">✨ 기능 제안</option>
-              <option value="improvement">🔧 개선 사항</option>
-              <option value="question">❓ 문의사항</option>
-              <option value="other">💬 기타</option>
+              <option value="bug">버그 제보</option>
+              <option value="feature">기능 제안</option>
+              <option value="improvement">개선 사항</option>
+              <option value="question">문의사항</option>
+              <option value="other">기타</option>
             </select>
           </div>
 
@@ -232,11 +232,11 @@ export function Feedback() {
               onChange={handleChange}
               required
               rows={8}
-              placeholder="자유롭게 의견을 남겨주세요&#10;&#10;예시:&#10;- 밸런스 게임 투표 후 결과가 바로 안 보여요&#10;- 다크모드 기능이 있으면 좋겠어요&#10;- 뉴스레터 검색 기능을 추가해주세요"
+              placeholder="의견을 입력하세요"
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-[#FF6B00] focus:outline-none transition-colors resize-none"
             />
             <p className="text-xs text-gray-500 mt-1">
-              최소 10자 이상 작성해주세요
+              10자 이상 작성
             </p>
           </div>
 
@@ -258,31 +258,7 @@ export function Feedback() {
               </>
             )}
           </button>
-
-          {/* Info */}
-          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-            <p className="text-sm text-gray-700">
-              💡 <strong>Tip:</strong> 구체적인 피드백일수록 더 빠르고 정확하게
-              반영할 수 있습니다!
-            </p>
-          </div>
         </form>
-
-        {/* Additional Info */}
-        <div className="mt-8 text-center text-sm text-gray-500">
-          <p>
-            긴급한 문의는{' '}
-            <a
-              href="https://www.instagram.com/likelion.univ/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[#FF6B00] hover:underline font-medium"
-            >
-              인스타그램 DM
-            </a>
-            으로 연락주세요
-          </p>
-        </div>
       </div>
 
       {/* Admin Login Modal */}
@@ -305,11 +281,8 @@ export function Feedback() {
                 <Lock className="text-white" size={32} />
               </div>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                관리자 인증
+                관리자
               </h2>
-              <p className="text-gray-600 text-sm">
-                관리자 페이지에 접근하려면 비밀번호를 입력하세요
-              </p>
             </div>
 
             <form onSubmit={handleAdminLogin} className="space-y-4">
@@ -335,7 +308,7 @@ export function Feedback() {
                 />
                 {adminError && (
                   <p className="text-red-600 text-sm mt-2">
-                    ❌ 비밀번호가 올바르지 않습니다
+                    비밀번호가 올바르지 않습니다
                   </p>
                 )}
               </div>
