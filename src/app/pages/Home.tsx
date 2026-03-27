@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, Calendar, Archive, Loader2, AlertCircle, Ref
 import { getNewsletters, Newsletter } from '../utils/api';
 import likelionLogo from '../../assets/0e22b8d85e32254db31b5fd548862b4df3d4b0a1.png';
 
-const NEWSLETTER_DETAIL_URL = 'https://stib.ee/RouL';
+const NEWSLETTER_DETAIL_URL = 'https://stib.ee/8ewL';
 
 function NewsletterImage({ src, alt, className }: { src: string; alt: string; className: string }) {
   const [hasError, setHasError] = useState(false);
