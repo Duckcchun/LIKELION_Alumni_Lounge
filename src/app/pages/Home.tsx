@@ -1,10 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Calendar, Archive, Loader2, AlertCircle, RefreshCw, Inbox } from 'lucide-react';
 import { getNewsletters, Newsletter } from '../utils/api';
 import likelionLogo from '../../assets/0e22b8d85e32254db31b5fd548862b4df3d4b0a1.png';
 
-const NEWSLETTER_DETAIL_URL = 'https://stib.ee/8ewL';
+const APRIL_NEWSLETTER_DETAIL_URL = 'https://stib.ee/zeSN';
+const DEFAULT_NEWSLETTER_DETAIL_URL = 'https://stib.ee/8ewL';
+
+function getNewsletterDetailUrl(newsletter: Newsletter): string {
+  if (newsletter.id === 2 || newsletter.month.includes('4월')) {
+    return APRIL_NEWSLETTER_DETAIL_URL;
+  }
+  return DEFAULT_NEWSLETTER_DETAIL_URL;
+}
 
 function NewsletterImage({ src, alt, className }: { src: string; alt: string; className: string }) {
   const [hasError, setHasError] = useState(false);
@@ -223,7 +231,9 @@ export function Home() {
 
                 <button
                   type="button"
-                  onClick={() => window.open(NEWSLETTER_DETAIL_URL, '_blank', 'noopener,noreferrer')}
+                  onClick={() =>
+                    window.open(getNewsletterDetailUrl(currentNewsletter), '_blank', 'noopener,noreferrer')
+                  }
                   className="bg-linear-to-r from-[#FF6B00] to-[#E56000] text-white px-6 py-3 rounded-xl hover:shadow-xl hover:scale-[1.02] transition-all w-full md:w-auto text-sm sm:text-base font-semibold flex items-center justify-center gap-2"
                 >
                   이번 호 자세히 보기

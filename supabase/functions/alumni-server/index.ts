@@ -30,18 +30,18 @@ app.get("/alumni-server/health", (c) => {
 });
 
 const DEFAULT_VOTE = {
-  id: "2026-03",
-  month: "3월",
-  question: "둘 중 하나만 팀원으로 골라야 한다면?",
+  id: "2026-04",
+  month: "4월",
+  question: "둘 중 하나만 골라야 한다면?",
   optionA: {
-    title: "개발 지식 0인데 말은 기가 막히게 통하는\n기획자",
-    emoji: "📝",
-    description: "기술 이해는 부족하지만 맥락 공유와 조율이 뛰어난 타입",
+    title: "졸업할 때까지 매 학기 전액 장학금",
+    emoji: "🎓",
+    description: "등록금 걱정 없이 대학 생활!",
   },
   optionB: {
-    title: "코딩은 신인데 소통이 1도 안 되는\n개발자",
-    emoji: "⚡",
-    description: "구현 속도와 완성도는 압도적이지만 협업 난이도가 높은 타입",
+    title: "졸업하자마자 연봉 1억 취업",
+    emoji: "💸",
+    description: "취업 걱정 끝, 바로 고연봉 커리어 시작!",
   },
 };
 
@@ -58,11 +58,15 @@ const DEFAULT_NEWSLETTERS = [
   {
     id: 2,
     month: "2026년 4월",
-    title: "발행 예정",
-    summary: "",
-    image: "",
-    date: "",
-    highlights: [],
+    title: "14기는 여기까지! 시작하자마자 공중분해 위기 맞 은 멋사 14기 근황",
+    summary: "14기 활동 하이라이트",
+    image: "https://likelion-alumni-lounge.vercel.app/newsletters/KakaoTalk_Photo_2026-04-30-14-32-14.jpeg",
+    date: "2026.04.30",
+    highlights: [
+      "솔로지옥 출연으로 대표 사퇴?! 우당탕탕 만우절 인스타 대소동",
+      "상금 100만 원의 주인공은? 신설 AI 배틀 '애니멀리그' 첫 결과 공개!",
+      "극한의 IT 밸런스 게임: 매 학기 전액 장학금 vs 졸업하자마자 연봉 1억"
+    ],
   },
   {
     id: 3,
@@ -124,8 +128,24 @@ function isSameVoteConfig(currentVote: any, defaultVote: typeof DEFAULT_VOTE): b
 
 async function syncVoteFromDefaults() {
   const currentVote = await kv.get("vote:current");
-  const voteChanged = !isSameVoteConfig(currentVote, DEFAULT_VOTE);
-  if (voteChanged) {
+
+  // Initialize once when there is no active vote yet.
+  if (!currentVote) {
+    await kv.set("vote:current", DEFAULT_VOTE);
+    await kv.set(`vote:results:${DEFAULT_VOTE.id}`, { optionA: 0, optionB: 0, totalVotes: 0 });
+    return;
+  }
+
+  const sameVoteId = currentVote.id === DEFAULT_VOTE.id;
+  const voteConfigChanged = !isSameVoteConfig(currentVote, DEFAULT_VOTE);
+
+  // If only labels/question changed for the same vote id, keep accumulated results.
+  if (sameVoteId && voteConfigChanged) {
+    await kv.set("vote:current", DEFAULT_VOTE);
+  }
+
+  // If vote id changed (e.g. new month), start fresh results for the new vote.
+  if (!sameVoteId) {
     await kv.set("vote:current", DEFAULT_VOTE);
     await kv.set(`vote:results:${DEFAULT_VOTE.id}`, { optionA: 0, optionB: 0, totalVotes: 0 });
     return;
@@ -209,6 +229,28 @@ app.post("/alumni-server/admin/reset-newsletters", async (c) => {
   } catch (error) {
     console.error("Error resetting newsletters:", error);
     return c.json({ error: "Failed to reset newsletters" }, 500);
+  }
+});
+
+// Admin endpoint to reset vote to current default and clear accumulated counts.
+app.post("/alumni-server/admin/reset-vote", async (c) => {
+  try {
+    const auth = await requireAdminAuth(c);
+    if (!auth.ok) return auth.response;
+
+    await kv.set("vote:current", DEFAULT_VOTE);
+    const resetResults = { optionA: 0, optionB: 0, totalVotes: 0 };
+    await kv.set(`vote:results:${DEFAULT_VOTE.id}`, resetResults);
+
+    return c.json({
+      success: true,
+      vote: DEFAULT_VOTE,
+      results: resetResults,
+      message: `Vote reset for ${DEFAULT_VOTE.month}`,
+    });
+  } catch (error) {
+    console.error("Error resetting vote:", error);
+    return c.json({ error: "Failed to reset vote" }, 500);
   }
 });
 
