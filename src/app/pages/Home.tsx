@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { ChevronLeft, ChevronRight, Calendar, Archive, Loader2, AlertCircle, RefreshCw, Inbox } from 'lucide-react';
 import { getNewsletters, Newsletter } from '../utils/api';
 import likelionLogo from '../../assets/0e22b8d85e32254db31b5fd548862b4df3d4b0a1.png';
