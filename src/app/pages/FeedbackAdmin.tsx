@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { MessageCircle, Mail, User, Calendar, RefreshCw, Trash2 } from 'lucide-react';
-import { useNavigate } from 'react-router';
+import { useNavigate } from 'react-router-dom';
 import { getFeedbacks, resetNewsletters as resetNewslettersApi, FeedbackItem } from '../utils/api';
 
 const ADMIN_TOKEN_KEY = 'alumni_admin_token';

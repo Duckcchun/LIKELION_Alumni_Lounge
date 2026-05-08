@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { MessageCircle, Send, CheckCircle, Lock, X } from 'lucide-react';
-import { useNavigate } from 'react-router';
+import { useNavigate } from 'react-router-dom';
 import { projectId, publicAnonKey } from '../../../utils/supabase/info';
 import { adminLogin } from '../utils/api';
 
