@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, Calendar, Archive, Loader2, AlertCircle, Ref
 import { getNewsletters, Newsletter } from '../utils/api';
 import likelionLogo from '../../assets/0e22b8d85e32254db31b5fd548862b4df3d4b0a1.png';
 
-const APRIL_NEWSLETTER_DETAIL_URL = 'https://stib.ee/zeSN';
+const APRIL_NEWSLETTER_DETAIL_URL = 'https://stib.ee/s8TN';
 const DEFAULT_NEWSLETTER_DETAIL_URL = 'https://stib.ee/8ewL';
 
 function getNewsletterDetailUrl(newsletter: Newsletter): string {
