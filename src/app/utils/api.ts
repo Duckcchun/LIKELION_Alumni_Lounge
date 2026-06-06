@@ -39,6 +39,24 @@ export interface Newsletter {
   highlights: string[];
 }
 
+function normalizeNewsletterImage(newsletter: Newsletter): Newsletter {
+  if (newsletter.id === 2 || newsletter.month.includes('4월')) {
+    return {
+      ...newsletter,
+      image: '/newsletters/april-2026-lion.jpg',
+    };
+  }
+
+  if (newsletter.id === 3 || newsletter.month.includes('5월')) {
+    return {
+      ...newsletter,
+      image: '/newsletters/may-2026-lion.jpg',
+    };
+  }
+
+  return newsletter;
+}
+
 const DEV_NEWSLETTERS: Newsletter[] = [
   {
     id: 1,
@@ -69,27 +87,31 @@ const DEV_NEWSLETTERS: Newsletter[] = [
   {
     id: 3,
     month: '2026년 5월',
-    title: '발행 예정',
-    summary: '',
-    image: '',
-    date: '',
-    highlights: [],
+    title: '아이디어톤부터 소개팅 서비스까지... 꽤 바빴던 14기의 5월, 같이 보실래요? 🦁',
+    summary: '5월 소식을 전합니다. 14기 첫 아이디어톤부터 캠퍼스 소개팅 서비스, Hack it Maker까지 알차게 담았습니다.',
+    image: '/newsletters/may-2026-lion.jpg',
+    date: '2026.05.30',
+    highlights: [
+      '14기 첫 아이디어톤 본격 시작: 전국 예선과 알럼나이 심사로 더 뜨거워진 도전',
+      "봄의 화제 프로젝트: 인천대 '주팅'과 숭실대 '도미사' 소개팅 서비스",
+      '이달의 IT 밸런스 게임: 기획은 내가 하고 AI가 코드를 다 짜줌 vs 코드는 내가 다 짜는데 기획이 완벽',
+    ],
   },
 ];
 
 const DEV_APRIL_VOTE: VoteData = {
-  id: '2026-04',
-  month: '4월',
+  id: '2026-05',
+  month: '5월',
   question: '둘 중 하나만 골라야 한다면?',
   optionA: {
-    title: '졸업할 때까지 매 학기 전액 장학금',
-    emoji: '🎓',
-    description: '등록금 걱정 없이 대학 생활!',
+    title: '기획은 내가 하고, AI가 코드를 다 짜줌',
+    emoji: '🤖',
+    description: '바이브 코딩 시대, 빠르게 구현 완성!',
   },
   optionB: {
-    title: '졸업하자마자 연봉 1억 취업',
-    emoji: '💸',
-    description: '취업 걱정 끝, 바로 고연봉 커리어 시작!',
+    title: '코드는 내가 다 짜는데, 기획이 완벽하게 주어짐',
+    emoji: '🧠',
+    description: '완벽한 요구사항 기반으로 정교하게 개발!',
   },
 };
 
@@ -175,7 +197,8 @@ export async function getNewsletters(): Promise<Newsletter[]> {
     throw new Error('Failed to fetch newsletters');
   }
   const data = await response.json();
-  return data.newsletters;
+  const newsletters = (data.newsletters || []) as Newsletter[];
+  return newsletters.map(normalizeNewsletterImage);
 }
 
 // Submit alumni story
