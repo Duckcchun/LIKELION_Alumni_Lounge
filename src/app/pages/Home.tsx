@@ -5,11 +5,15 @@ import { getNewsletters, Newsletter } from '../utils/api';
 import likelionLogo from '../../assets/0e22b8d85e32254db31b5fd548862b4df3d4b0a1.png';
 
 const APRIL_NEWSLETTER_DETAIL_URL = 'https://stib.ee/s8TN';
+const MAY_NEWSLETTER_DETAIL_URL = 'https://stib.ee/9dtN';
 const DEFAULT_NEWSLETTER_DETAIL_URL = 'https://stib.ee/8ewL';
 
 function getNewsletterDetailUrl(newsletter: Newsletter): string {
   if (newsletter.id === 2 || newsletter.month.includes('4월')) {
     return APRIL_NEWSLETTER_DETAIL_URL;
+  }
+  if (newsletter.id === 3 || newsletter.month.includes('5월')) {
+    return MAY_NEWSLETTER_DETAIL_URL;
   }
   return DEFAULT_NEWSLETTER_DETAIL_URL;
 }
